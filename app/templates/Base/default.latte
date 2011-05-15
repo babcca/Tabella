@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+	<meta name="description" content="Tabella addon example site">
+	<meta name="robots" content="{$robots}" n:ifset="$robots">
+
+	<title>Tabella Example Site</title>
+
+	<link rel="stylesheet" media="screen,projection,tv" href="{$basePath}/css/screen.css" type="text/css">
+	<link rel="stylesheet" media="screen,projection,tv" href="{$basePath}/css/nette.tabella.css" type="text/css">
+	<link rel="stylesheet" media="screen,projection,tv" href="{$basePath}/css/jquery.datepicker.css" type="text/css">
+	<link rel="stylesheet" media="print" href="{$basePath}/css/print.css" type="text/css">
+	<link rel="shortcut icon" href="{$basePath}/favicon.ico" type="image/x-icon">
+</head>
+
+<body>
+  <div id="wrapper">
+	<div id="logo"></div>
+
+	<h1>Tabella Example</h1>
+
+	<h2>
+	  <a href="{link this basic}">basic</a> 
+	  <a href="{link this complex}">complex</a>
+	  <a href="{link this editable}">editable</a>
+   	  <a href="/tabella.zip">download</a>
+	</h2>
+
+	<hr />
+
+	<h2>{$name|capitalize} Tabella</h2>
+
+	{control $tabellaName}
+
+	<pre>
+	  {$code}
+	</pre>
+	<p>
+	(c) 2011 Vojtěch Knyttl, New BSD Licence
+	</p>
+  </div>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+  <script type="text/javascript" src="{$basePath}/js/jquery.datepicker.js"></script>
+  <script type="text/javascript" src="{$basePath}/js/nette.tabella.js"></script>
+</body>
+</html>
