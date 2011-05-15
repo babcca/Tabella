@@ -46,14 +46,13 @@
 			
 			// common default parameters 
 			$this->params = $params + array( 
-				'current' => 1,							// current page
-				'translator' => false,
+				'offset' => 1,							// default offset (page)
 				'limit' => 25,							// default rows on page
 				'order' => 'id',						// default ordering
-				'offset' => 1,							// default offset (page)
 				'sorting' => 'asc',						// sorting [asc|desc]
 				'filter' => null,						// default filtering (in array)
 				'onSubmit' => null,
+				'translator' => false,
 				'rowRenderer' => function( $row ) {
 					return Html::el( "tr" );
 				},
@@ -134,7 +133,7 @@
 					Html::el( "div", array( 
 										"class" => "tabella",
 										"data-id" => $this->getUniqueId(),
-										"data-params" => json_encode( array( "submitUrl" => $this->link( "submit!", $this->params ), "cols" => $this->cols ) ) ) )
+										"data-params" => json_encode( array( "submitUrl" => $this->link( "submit!", $this->linkOpts ), "cols" => $this->cols ) ) ) )
 					->add( Html::el( "table" )->add( $this->renderHeader() )
 					->add( $this->renderBody() ) )
 					->add( $this->renderFooter() )->add( Html::el("br class=eol") );
@@ -373,7 +372,7 @@
 				
 				$footer->add( $fst->add( "«" ) );
 					
-				$range = range( max( 1, $this->params['current'] - $count), min( $pages, $this->params['offset'] + $count));
+				$range = range( max( 1, $this->params['offset'] - $count), min( $pages, $this->params['offset'] + $count));
 			
 				$quotient = ( $pages - 1 ) / $count;
 				for( $i = 0; $i <= $count; $i++ ) {
