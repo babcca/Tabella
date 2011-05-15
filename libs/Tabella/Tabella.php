@@ -30,11 +30,12 @@
 		const DATE 		= "date";
 		const TIME 		= "time";
 		const DATETIME 	= "datetime";
+		const NUMBER    = "number";
 		const DELETE 	= "delete";
 		const ADD 		= "addTabellaButton";
 
 		/**
-		 * Constructs the DibiGrid
+		 * Constructs the Tabella
 		 * @param DibiDataSource
 		 * @param array of default parameters 
 		 */
@@ -46,7 +47,7 @@
 			// common default parameters 
 			$this->params = $params + array( 
 				'current' => 1,							// current page
-				'translator' => null,
+				'translator' => false,
 				'limit' => 25,							// default rows on page
 				'order' => 'id',						// default ordering
 				'offset' => 1,							// default offset (page)
@@ -56,7 +57,8 @@
 				'rowRenderer' => function( $row ) {
 					return Html::el( "tr" );
 				},
-				'rowClass' => array()					// helper to render each row
+				'rowClass' => array(),					// helper to render each row
+				'userParams' => array()
 			);
 			
 			// default parameters for each row
@@ -73,8 +75,18 @@
 				'class' => array(),						// array of classes added to column	
 				'translate' => false, 					// columns are not translated by default
 				'headerElement' => Html::el( "th" ),	// helper to render the header cell
-				'filterHandler' => function( $val, $col ) {
-						return "$col LIKE '$val%'";
+				'filterHandler' => function( $val, $col, $type ) {
+						switch( $type ) {
+							case Tabella::CHECKBOX:
+								return "[$col] = ". ($val == "on" ? "1" : "0");
+							case Tabella::NUMBER:
+							case Tabella::TIME:
+							case Tabella::DATETIME:
+							case Tabella::DATE:
+								return "[$col] = '$val'";
+							default:					
+								return "[$col] LIKE '$val%'";
+						}
 				},										// helper to apply filters
 				'type' => self::TEXT					// default column type
 			);
@@ -87,10 +99,10 @@
 		public function loadState(array $params) {	
 			$foo = $this->params;
 			parent::loadState( $params );
-			$this->params = $this->params + $foo;
+			$this->params = $this->params + (array) $foo;
 			$this->linkOpts = array_intersect_key( 
 									$this->params,
-									array( 'limit' => 0, 'order' => 0, 'sorting' => 0, 'offset' => 0, 'filter' => 0 ) );
+									array( 'limit' => 0, 'order' => 0, 'sorting' => 0, 'offset' => 0, 'filter' => 0, 'userParams' => 0 ) );
 		}
 
 		/**
@@ -147,7 +159,7 @@
 					if( isset( $col->params['options'] ) )
 						$columnParams[$this->getUniqueId()]['columnInfo'][$col->colName] = $col->params['options'];
 				
-					if( $col->params['order'] ) {
+					if( $col->params['order'] && $col->params['type'] != self::DELETE ) {
 						$a = Html::el( "a" );
 						$a->class[] = "ajax";
 						if( $col->colName == $this->params['order'] )
@@ -165,34 +177,67 @@
 
 						$a->add( $col->name );
 					} else {
-						$a = Html::el( "span" )->add( $col->name );
+						$a = $col->name ? Html::el( "span" )->add( $col->name ) : "";
 					}	
 					$th = clone $col->params['headerElement'];
 					$th->add( $a );
 				
-					$th->style['width'] = $col->params['width']."px !important";
+					if( $col->params['type'] != self::DELETE ) {
+						
+						$th->style['width'] = $col->params['width']."px";
 	
-					if( $col->params['filter'] ) {
-						$filter = "";
-						if( is_array( $col->params['filter'] ) ) {
-							$filter = Html::el( "select class=filter" )->name( $col->colName );
-							foreach( $col->params['filter'] as $f => $v ) {
-								$f = (string) $f;
-								$filter->add( Html::el( "option value=$f".(@$this->params["filter"][$col->colName]=="$f" ?" selected":"") )->add( $v ) );
+						if( $col->params['filter'] ) {
+							$filter = "";
+							if( $col->params['type'] == self::CHECKBOX )
+								$col->params['filter'] = array( "" => "", "on" => "on", "off" => "off" );
+								
+							if( is_array( $col->params['filter'] ) ) {
+								$filter = Html::el( "select class=filter" )->name( $col->colName );
+								$pad = false;
+								$pad_str = "";
+								foreach( $col->params['filter'] as $f => $v ) {
+							
+									$el = Html::el( "option" );
+									
+									// disabled elements defined as array									
+									if( is_array( $v ) ) {
+										$v = $v[0];
+										$el->disabled = true;
+										$pad = true;
+										$pad_str = "";
+									} else {
+										if( $pad )
+											$pad_str = "&nbsp;&nbsp;";
+									}
+
+									// translating filtered elements if required
+									if( $col->params['translate'] && ($t = $this->params['translator']))
+										$v = $t->translate( $v );
+										
+									$el->add( $pad_str.$v );
+									
+									if( @$this->params["filter"][$col->colName]=="$f") 
+										$el->selected = true;										
+																		
+									$el->value = (string) $f;
+									
+									$filter->add( $el );
+								}
+							} else {
+								$filter = Html::el( "input" );
+								$filter->name( $col->colName );
+								$filter->class[] = "filter";
+
+								if( $col->params['type'] == self::DATE ) {
+									$filter->class[] = "dateFilter";
+									$th->{"data-format"} = $col->params['dateFormat'];
+								} 
+								if( @$this->params["filter"][$col->colName] )
+									$filter->value = $this->params["filter"][$col->colName];
 							}
-						} else {
-							$filter = Html::el( "input" );
-							$filter->class[] = "filter";
-							if( $col->params['type'] == self::DATE ) {
-								$filter->class[] = "dateFilter";
-								$th->{"data-format"} = $col->params['dateFormat'];
-							}
-							$filter->name( $col->colName );
-							if( @$this->params["filter"][$col->colName] )
-								$filter->value = $this->params["filter"][$col->colName];
-						}
-						$th->add( $filter );	
-					}		
+							$th->add( $filter );	
+						}		
+					}
 				}
 				$header->add( $th );
 			}
@@ -213,8 +258,16 @@
 			foreach( $this->params['filter'] as $col => $val ) {
 				if( "$val" == "" ) 
 					continue;
-				$fh = $this->cols[$col]->params['filterHandler'];
-				$this->source->where( $fh( $val, $col ) );
+
+				if( !isset( $this->cols[$col]->params['filterHandler'] ) ) {
+					// filtering by column, which is not shown
+					$fh = function( $val, $col, $type ) {
+						return "[$col] = '$val'";
+					};
+				} else {
+					$fh = $this->cols[$col]->params['filterHandler'];
+				}
+				$this->source->where( $fh( $val, $col, $this->cols[$col]->params['type'] ) );
 			}
 
 			$this->count = $this->source->count();
@@ -238,7 +291,7 @@
 						$str = "";
 					} else {
 						$str = $row[$col->colName];
-						if( $t = $this->params['translator'] )
+						if( $col->params['translate'] && ($t = $this->params['translator']) )
 							$str = $t->translate( $str );
 					}
 					
@@ -260,6 +313,12 @@
 						}
 						
 						switch( $col->params['type'] ) {
+							case self::CHECKBOX:
+								$el = Html::el( "input type=checkbox" )->disabled( true );
+								$el->checked = $str ? true : false;
+								$c->add( $el );
+								$str = "";
+								break;
 							case self::TEXT:
 								$str = $col->params['truncate'] ? Strings::truncate( $str, $col->params['truncate'] ) : $str;
 								break;

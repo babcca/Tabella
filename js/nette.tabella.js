@@ -14,16 +14,14 @@
 		});
 
 		$(".tabella .filter").live( "change", function() {
-
 			focused = $(this).attr("data-id");
 			name = $(this).tabellaEl().attr("data-id");
 
 			filters = "?do="+name+"-reset&";
-			
 			$(this).tabellaFadeBody();
 			
 			$(".tabella .filter").each( function() {
-				filters += name+"-filter["+$(this).attr("data-id")+"]="+encodeURIComponent($(this).val())+"&";
+				filters += name+"-filter["+$(this).attr("name")+"]="+encodeURIComponent($(this).val())+"&";
 			});
 
 			tabella.getContents(window.location.pathname+filters, function( payload ) {
@@ -68,7 +66,6 @@
 					payload[key] = $(this).val();
 				});
 				// saving the inline edit
-				console.log(tabella.params);
 				$.post( tabella.params[name].submitUrl, payload, tabella.ajaxSuccess );				
 			} else {
 				if( row.attr( "data-id" ) == 0 ) {
@@ -166,7 +163,17 @@
 						case "text": 
 							cell = $("<input type=text>");
 							break;
-						case "date":
+						case "textarea": 
+ 							cell = $("<textarea>");
+ 							break;
+						case "checkbox":
+							cell = $("<input type=checkbox>")
+									.attr( "name", $(this).attr( "data-name" ) )
+									.attr( "checked", $(this).attr("data-editable") == "1" );
+							$(this).html( cell );
+							cell = null;
+							break;			
+                        case "date":
 							cell = $("<input type=text>")
 										.attr( "name", $(this).attr( "data-name" ) )
 										.val( $(this).text() );
