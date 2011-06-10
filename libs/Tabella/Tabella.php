@@ -12,8 +12,8 @@
 
 	namespace Addons;
 	
-	use \Nette\Utils\Html,
-		\Nette\Utils\Strings;
+	use Nette\Utils\Html,
+		Nette\Utils\Strings;
 	
 	class Tabella extends \Nette\Application\UI\Control {
 		protected $source;
@@ -130,13 +130,14 @@
 			$this->template->setFile( dirname( __FILE__ ).'/tabella.latte' );
 			$this->template->tabella_id = $this->getUniqueId();
 			$this->template->body = 
-					Html::el( "div", array( 
-										"class" => "tabella",
-										"data-id" => $this->getUniqueId(),
-										"data-params" => json_encode( array( "submitUrl" => $this->link( "submit!", $this->linkOpts ), "cols" => $this->cols ) ) ) )
-					->add( Html::el( "table" )->add( $this->renderHeader() )
+					Html::el( 'div', array( 
+										'class' => 'tabella',
+										'data-id' => $this->getUniqueId(),
+										'data-submit-url' => $this->link( 'submit!', $this->linkOpts ),
+										'data-params' => json_encode( array( 'cols' => $this->cols ) ) ) )
+					->add( Html::el( 'table' )->add( $this->renderHeader() )
 					->add( $this->renderBody() ) )
-					->add( $this->renderFooter() )->add( Html::el("br class=eol") );
+					->add( $this->renderFooter() )->add( Html::el('br class=eol') );
 
 			$this->template->render();
 		}

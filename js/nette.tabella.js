@@ -66,7 +66,8 @@
 					payload[key] = $(this).val();
 				});
 				// saving the inline edit
-				$.post( tabella.params[name].submitUrl, payload, tabella.ajaxSuccess );				
+				
+				$.post( $(this).tabellaEl().attr('data-submit-url'), payload, tabella.ajaxSuccess );				
 			} else {
 				if( row.attr( "data-id" ) == 0 ) {
 					row.tabellaEl().find( ".delete" ).show();
@@ -85,7 +86,7 @@
 				return;
 			}
 
-			$.post( tabella.params[$(this).tabellaName()].submitUrl, 
+			$.post( $(this).tabellaEl().attr('data-submit-url'), 
 						$(this).tabellaName()+'-deleteId='+tr.attr("data-id"), tabella.ajaxSuccess );
 		});
 		$(".tabella .add").live( "click", function() {
