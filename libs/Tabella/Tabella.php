@@ -4,10 +4,10 @@
 *
 * For more information please see http://nette.org
 *
-* @author 	Vojtěch Knyttl
+* @author     Vojtěch Knyttl
 * @copyright  Copyright (c) 2010 Vojtěch Knyttl
-* @license	New BSD License
-* @link   	http://tabella.knyt.tl/
+* @license    New BSD License
+* @link       http://tabella.knyt.tl/
 */
 
 namespace Addons;
@@ -16,29 +16,38 @@ use Nette\Utils\Html,
 	Nette\Utils\Strings;
 
 class Tabella extends \Nette\Application\UI\Control {
+
 	protected $source;
+
 	protected $count;
+
 	protected $cols;
+
 	protected $params;
+
 	protected $linkOpts;
+
 	protected $defaultRowParams;
 
-	const TEXT      = 'text';
-	const TEXTAREA  = 'textarea';
-	const SELECT    = 'select';
-	const CHECKBOX  = 'checkbox';
-	const DATE      = 'date';
-	const TIME      = 'time';
-	const DATETIME  = 'datetime';
-	const NUMBER    = 'number';
-	const DELETE    = 'delete';
-	const ADD       = 'addTabellaButton';
+	const
+		TEXT      = 'text',
+		TEXTAREA  = 'textarea',
+		SELECT    = 'select',
+		CHECKBOX  = 'checkbox',
+		DATE      = 'date',
+		TIME      = 'time',
+		DATETIME  = 'datetime',
+		NUMBER    = 'number',
+		DELETE    = 'delete',
+		ADD       = 'addTabellaButton';
+
+
 
 	/**
-		* Constructs the Tabella
-		* @param DibiDataSource
-		* @param array of default parameters
-		*/
+	 * Constructs the Tabella
+	 * @param DibiDataSource
+	 * @param array of default parameters
+	 */
 	public function __construct($dibiSource, $params = array()) {
 		parent::__construct();
 		$this->source = $dibiSource;
@@ -91,10 +100,12 @@ class Tabella extends \Nette\Application\UI\Control {
 		);
 	}
 
+
+
 	/**
-		* Load state (from $_GET) for the control
-		* @param array
-		*/
+	 * Load state (from $_GET) for the control
+	 * @param array
+	 */
 	public function loadState(array $params) {
 		$foo = $this->params;
 		parent::loadState($params);
@@ -104,12 +115,14 @@ class Tabella extends \Nette\Application\UI\Control {
 				array('limit' => 0, 'order' => 0, 'sorting' => 0, 'offset' => 0, 'filter' => 0, 'userParams' => 0));
 	}
 
+
+
 	/**
-		* Adds a columnt to the grid
-		* @param string displayed name
-		* @param string column name (in db)
-		* @param array parameters for the column
-		*/
+	 * Adds a columnt to the grid
+	 * @param string displayed name
+	 * @param string column name (in db)
+	 * @param array parameters for the column
+	 */
 	public function addColumn($name, $colName, $params = array()) {
 		if (!is_array($params)) {
 			throw(new Exception('Third argument must be an array.'));
@@ -123,9 +136,11 @@ class Tabella extends \Nette\Application\UI\Control {
 		return $this;
 	}
 
+
+
 	/**
-		* renders the grid
-		*/
+	 * renders the grid
+	 */
 	public function render() {
 		$this->template->setFile(dirname(__FILE__).'/tabella.latte');
 		$this->template->tabella_id = $this->getUniqueId();
@@ -142,10 +157,12 @@ class Tabella extends \Nette\Application\UI\Control {
 		$this->template->render();
 	}
 
+
+
 	/**
-		* renders the header
-		* @return string
-		*/
+	 * renders the header
+	 * @return string
+	 */
 	public function renderHeader() {
 		$header = Html::el("tr");
 		$anchor = $this->linkOpts;
@@ -161,7 +178,7 @@ class Tabella extends \Nette\Application\UI\Control {
 
 				if ($col->params['order'] && $col->params['type'] != self::DELETE) {
 					$a = Html::el("a");
-					$a->class[] = "ajax";
+					$a->class[] = "tabella_ajax";
 					if ($col->colName == $this->params['order'])
 						$a->class[] = $this->params['sorting'];
 
@@ -247,10 +264,12 @@ class Tabella extends \Nette\Application\UI\Control {
 		return $header;
 	}
 
+
+
 	/**
-	 * renders the body
-		* @return string
-		*/
+	 * renders the body
+	 * @return string
+	 */
 	public function renderBody() {
 
 		$body = Html::el('tbody');
@@ -355,10 +374,12 @@ class Tabella extends \Nette\Application\UI\Control {
 		return $body;
 	}
 
+
+
 	/**
-	 * renders the footer
-		* @return string
-		*/
+	 * renders the footer
+	 * @return string
+	 */
 	public function renderFooter() {
 		$footer = Html::el('div class="tabella-footer"');
 
@@ -387,7 +408,7 @@ class Tabella extends \Nette\Application\UI\Control {
 
 			foreach ($range as $i) {
 				$a = Html::el('a')->add($i)->href($this->link('reset!', array('offset' => $i) + $this->linkOpts));
-				$a->class[] = 'ajax';
+				$a->class[] = 'tabella_ajax';
 				if ($i == $this->params['offset'])
 					$a->class[] = 'selected';
 
@@ -406,15 +427,17 @@ class Tabella extends \Nette\Application\UI\Control {
 	}
 
 	/**
-		* invalidating the control
-		*/
+	 * invalidating the control
+	 */
 	public function handleReset() {
 		$this->invalidateControl();
 	}
 
+
+
 	/**
-		* react on inline edit
-		*/
+	 * react on inline edit
+	 */
 	public function handleSubmit() {
 		$this->invalidateControl();
 		$submitted = $this->presenter->getRequest()->getPost();
