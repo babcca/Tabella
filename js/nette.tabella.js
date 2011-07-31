@@ -125,7 +125,7 @@ $(document).ready(function() {
 		tr.prependTo($(this).tabellaEl().find(".tabella-body"));
 		tr.tabellaStartEdit();
 	});
-	});
+});
 
 tabella = {
 	getContents: function(url, success) {
@@ -157,7 +157,6 @@ tabella = {
 
 
 	$.fn.extend({
-//		tabella: {
 		tabellaName: function() {
 			return $(this).tabellaEl().attr("data-id");
 		},
@@ -175,6 +174,8 @@ tabella = {
 			$(this).tabellaEl().find(".delete").hide();
 			$(this).find(".editable").each(function() {
 				var cell;
+				var name = $(this).attr("data-name");
+				var val = $(this).tabellaEl().find(".filter[name='"+name+"']").val();
 				switch($(this).attr("data-type")) {
 					case "text":
 						cell = $("<input type=text>");
@@ -184,15 +185,15 @@ tabella = {
 							break;
 					case "checkbox":
 						cell = $("<input type=checkbox>")
-								.attr("name", $(this).attr("data-name"))
-								.attr("checked", $(this).attr("data-editable") == "1");
+							.attr("name", name)
+							.attr("checked", $(this).attr("data-editable") == "1");
 						$(this).html(cell);
 						cell = null;
 						break;
 					case "date":
 						cell = $("<input type=text>")
-									.attr("name", $(this).attr("data-name"))
-									.val($(this).text());
+							.attr("name", name)
+							.val($(this).text());
 						$(this).html(cell);
 						cell.css("width", ($(this).css("width").match(/\d+/)[0]*1+4)+"px !important");
 						cell.tabellaDatePicker();
@@ -201,17 +202,18 @@ tabella = {
 					case "select":
 						cell = $("<select>");
 
-						$.each(tabella.params[$(this).tabellaName()]["cols"][$(this).attr("data-name")]["params"]["options"],
+						$.each(tabella.params[$(this).tabellaName()]["cols"][name]["params"]["options"],
 							function(key, val) {
 								cell.append($("<option>").attr("value",key).html(val));
 							});
 						break;
 				}
 				if (cell) {
-					cell.attr("name", $(this).attr("data-name"))
+					cell.attr("name", name)
 						.val($(this).attr("data-editable"));
 					$(this).html(cell);
 					cell.css("width", ($(this).css("width").match(/\d+/)[0]*1+4)+"px !important");
+					cell.val(val);
 				}
 			});
 			$(this).find(".editable:first").append($("<input name=id type=hidden>").attr("value", $(this).attr("data-id")));
@@ -277,5 +279,4 @@ tabella = {
 				$('*').unbind('focus.datePicker');
 			});
 		}
-//		}
-});
+	});
