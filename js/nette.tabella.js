@@ -170,6 +170,7 @@ tabella = {
 			$(this).css("opacity", "0.5");
 		},
 		tabellaStartEdit: function() {
+			var row = $(this);
 			$(this).addClass("edited");
 			$(this).tabellaEl().find(".delete").hide();
 			$(this).find(".editable").each(function() {
@@ -213,7 +214,8 @@ tabella = {
 						.val($(this).attr("data-editable"));
 					$(this).html(cell);
 					cell.css("width", ($(this).css("width").match(/\d+/)[0]*1+4)+"px !important");
-					cell.val(val);
+					if(row.attr("data-id") == 0)
+						cell.val(val);
 				}
 			});
 			$(this).find(".editable:first").append($("<input name=id type=hidden>").attr("value", $(this).attr("data-id")));
