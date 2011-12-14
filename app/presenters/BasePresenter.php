@@ -118,14 +118,14 @@ class BasePresenter extends Presenter {
 
 		$context = $this->context;
 
-		 $grid = new Tabella(array(
-		 		'context' => $this->context,
-		 		'source'	 => $this->context->model->users->source(),
-		 		'order'	 => 'surname',
-		 		'limit'	 => 15,
-		 		'rowRenderer' => function($row) {
-		 			return Html::el('tr')->class($row->sex);
-		 		}
+		$grid = new Tabella(array(
+				'context'     => $this->context,
+				'source'      => $this->context->model->users->source(),
+				'order'       => 'surname',
+				'limit'       => 15,
+				'rowRenderer' => function($row) {
+					return Html::el('tr')->class($row->sex);
+				}
 			));
 
 		$grid->addColumn('Id', 'id', array(
@@ -135,12 +135,12 @@ class BasePresenter extends Presenter {
 		$grid->addColumn('Surname', 'surname', array(
 				'renderer' => function($row) use ($context) {
 					// can be a link within the application
-				   	return Html::el('td')->class('al')->add(Html::el('a')->target('_blank')
-		   				->href($context->application->presenter
-		   					->link('this', array(
-		   						'complexTabella-filter' => array('id' => $row->id))))
-				   		->add(Strings::truncate($row->surname, 25)));
-				   	return $td;
+					return Html::el('td')->class('al')->add(Html::el('a')->target('_blank')
+						->href($context->application->presenter
+							->link('this', array(
+								'complexTabella-filter' => array('id' => $row->id))))
+						->add(Strings::truncate($row->surname, 25)));
+					return $td;
 		 		},
 		 		// own filter handler which reacts on change in the filter input
 		 		'filterHandler' => function($source, $value) {
