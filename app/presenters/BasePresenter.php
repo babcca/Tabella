@@ -62,7 +62,7 @@ class BasePresenter extends Presenter {
 		 			$post['born'] = strtotime($post['born']);
 		 			$model->users->save($post);
 				},
-				'onDelete' => function($id) {
+				'onDelete' => function($id) use ($model) {
 					//$model->users->delete($id);
 				}
 			));

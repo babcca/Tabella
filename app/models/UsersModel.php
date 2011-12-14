@@ -13,7 +13,7 @@ class UsersModel extends BaseModel {
 		if (@!$set['id'])
 			$this->db->insert('users', $set)->execute();
 		else
-			$this->db->update('users', $set)->where('id = %i', $id)->execute();
+			$this->db->update('users', $set)->where('id = %i', $set['id'])->execute();
 	}
 
 
