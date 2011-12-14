@@ -8,8 +8,11 @@
  * @license    New BSD License
  * @link       http://tabella.knyt.tl/
  */
- 
+
 $(document).ready(function() {
+	if ($(".tabella").length == 0)
+		return false;
+
 	$(".tabella").each(function(key, val) {
 		eval('var foo = ' + $(val).attr("data-params"));
 		tabella.params[$(val).attr("data-id")] = foo;
@@ -89,17 +92,26 @@ $(document).ready(function() {
 		row.tabellaFinishEdit();
 	});
 
-	$(".tabella .delete").live("click", function() {
-		tr = $(this).parents("tr");
-		tr.tabellaFade();
-		if (!confirm("Sure to delete?")) {
-			tr.css("opacity", "1");
-			return;
-		}
 
-		$.post($(this).tabellaEl().attr('data-submit-url'),
-			$(this).tabellaName()+'-deleteId='+tr.attr("data-id"), tabella.ajaxSuccess);
+	$(".tabella .delete").live({
+		mouseenter: function() {
+			$(this).parent().css("opacity", "0.5");
+		},
+		mouseleave: function() {
+			$(this).parent().css("opacity", "1");
+		},
+		click: function() {
+			tr = $(this).parents("tr");
+			tr.tabellaFade();
+			if (!confirm("Sure to delete?")) {
+				tr.css("opacity", "1");
+				return;
+			}
+			$.post($(this).tabellaEl().attr('data-submit-url'),
+				$(this).tabellaName()+'-deleteId='+tr.attr("data-id"), tabella.ajaxSuccess);
+		}
 	});
+
 	$(".tabella .add").live("click", function() {
 		tr = $("<tr data-id=0>");
 		tabellaParams = tabella.params[$(this).tabellaName()];
@@ -142,6 +154,8 @@ tabella = {
 			tabella.currentAjax--;
 		});
 	},
+
+
 
 	ajaxSuccess: function(payload) {
 		// partially based on Nette ajax script by David Grudl and Jan Marek
@@ -221,6 +235,9 @@ tabella = {
 			$(this).find(".editable:first").append($("<input name=id type=hidden>").attr("value", $(this).attr("data-id")));
 			$(this).append('<td class="button save"></td><td class="button cancel"></td>');
 		},
+
+
+
 		tabellaFinishEdit: function() {
 			$(this).tabellaEl().find(".delete").show();
 			$(this).parent().find(".edited").each(function() {
@@ -231,54 +248,13 @@ tabella = {
 				});
 			});
 		},
+
+
+
 		// function to run the date picker tool
 		tabellaDatePicker: function() {
 			if (this.length == 0)
 				return
 			format = $(this).parent().attr("data-format");
-			$.dpText = {
-				TEXT_PREV_MONTH  : '',
-				TEXT_NEXT_MONTH  : '',
-				TEXT_CLOSE       : '',
-				TEXT_CHOOSE_DATE : '',
-				HEADER_FORMAT    : 'mmmm yyyy'
-			}
-
-			Date.firstDayOfWeek = 1;
-			format = format.replace('%d', 'dd')
-				.replace('%m', 'mm')
-				.replace('%y', 'yy')
-				.replace('%Y', 'yyyy');
-			if (format.match(/yyyy/)) {
-				d = new Date("01/01/1970");
-			} else {
-				d = new Date("01/01/2000");
-			}
-
-			Date.format = format;
-			d = d.asString();
-			$(this).datePicker({
-				clickInput: true,
-				startDate: d,
-					createButton: false
-				}).bind('focus', function(event, message) {
-				if (message == $.dpConst.DP_INTERNAL_FOCUS)
-					return true;
-				var dp = this;
-				var $dp = $(this);
-				$dp.dpDisplay();
-				$('*').bind('focus.datePicker', function(event) {
-					var $focused = $(this);
-					if (!$focused.is('.dp-applied')) {
-						if ($focused.parents('#dp-popup').length == 0 && this != dp && !($.browser.msie && this == document.body)) {
-							$('*').unbind('focus.datePicker');
-							$dp.dpClose();
-						}
-					}
-				});
-				return false;
-			}).bind('dpClosed', function(event, selected) {
-				$('*').unbind('focus.datePicker');
-			});
 		}
 	});

@@ -5,14 +5,13 @@
 common:
 	php:
 		date.timezone: Europe/Prague
-	variable:
-		tempDir: "%appDir%/../temp"
-		logDir: "%appDir%/logs"
+
+	parameters:
+		tempDir: "%appDir%/../tmp"
+		logDir: "%appDir%/../log"
 	
-	service:
+	services:
 		robotLoader:
-			option:
-				directory: [%appDir%, %libsDir%]
 			run: true
 
 	database:

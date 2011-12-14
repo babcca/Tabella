@@ -1,19 +1,19 @@
 <?php
 /**
-* This source file is subject to the "New BSD License".
-*
-* For more information please see http://nette.org
-*
-* @author     Vojtěch Knyttl
-* @copyright  Copyright (c) 2010 Vojtěch Knyttl
-* @license    New BSD License
-* @link       http://tabella.knyt.tl/
-*/
+ * Tabella DibiFluent Datagrid
+ *
+ * This source file is subject to the "New BSD License".
+ *
+ * @author     Vojtěch Knyttl
+ * @copyright  Copyright (c) 2010 Vojtěch Knyttl
+ * @license    New BSD License
+ * @link       http://tabella.knyt.tl/
+ */
 
-namespace Addons;
+namespace Maite;
 
-use Nette\Utils\Html,
-	Nette\Utils\Strings;
+use \Nette\Utils\Html,
+	Maite\Utils\Strings;
 
 class Tabella extends \Nette\Application\UI\Control {
 
@@ -25,7 +25,7 @@ class Tabella extends \Nette\Application\UI\Control {
 
 	protected $params;
 
-	protected $linkOpts;
+	protected $context;
 
 	protected $defaultRowParams;
 
@@ -42,15 +42,26 @@ class Tabella extends \Nette\Application\UI\Control {
 		ADD       = 'addTabellaButton';
 
 
+	public $offset, $limit, $sorting, $filter, $order;
+
+	public static function getPersistentParams() {
+		return array('offset', 'limit', 'sorting', 'filter', 'order');
+	}
+
+
 
 	/**
 	 * Constructs the Tabella
 	 * @param DibiDataSource
 	 * @param array of default parameters
 	 */
-	public function __construct($dibiSource, $params = array()) {
+	public function __construct($params) {
 		parent::__construct();
-		$this->source = $dibiSource;
+
+		$this->context = $params['context'];
+
+		$this->source = $params['source'];
+
 		$this->cols = array();
 
 		// common default parameters
@@ -66,7 +77,8 @@ class Tabella extends \Nette\Application\UI\Control {
 				return Html::el('tr');
 			},
 			'rowClass' => array(),      // helper to render each row
-			'userParams' => array()
+			'userParams' => array(),
+			'addedControls' => array()
 		);
 
 		// default parameters for each row
@@ -83,19 +95,6 @@ class Tabella extends \Nette\Application\UI\Control {
 			'class'          => array(),          // array of classes added to column
 			'translate'      => false,            // columns are not translated by default
 			'headerElement'  => Html::el('th'),   // helper to render the header cell
-			'filterHandler'  => function($val, $col, $type) {
-				switch($type) {
-					case Tabella::CHECKBOX:
-						return "[$col] = ". ($val == 'on' ? '1' : '0');
-					case Tabella::NUMBER:
-					case Tabella::TIME:
-					case Tabella::DATETIME:
-					case Tabella::DATE:
-						return "[$col] = '$val'";
-					default:
-						return "[$col] LIKE '$val%'";
-				}
-			},                                    // helper to apply filters
 			'type' => self::TEXT                  // default column type
 		);
 	}
@@ -107,12 +106,9 @@ class Tabella extends \Nette\Application\UI\Control {
 	 * @param array
 	 */
 	public function loadState(array $params) {
-		$foo = $this->params;
+		$default = $this->params;
 		parent::loadState($params);
-		$this->params = $this->params + (array) $foo;
-		$this->linkOpts = array_intersect_key(
-				$this->params,
-				array('limit' => 0, 'order' => 0, 'sorting' => 0, 'offset' => 0, 'filter' => 0, 'userParams' => 0));
+		$this->params = $this->params + (array) $default;
 	}
 
 
@@ -142,13 +138,15 @@ class Tabella extends \Nette\Application\UI\Control {
 	 * renders the grid
 	 */
 	public function render() {
-		$this->template->setFile(dirname(__FILE__).'/tabella.latte');
+//		$this->template->setFile(dirname(__FILE__).'/tabella.latte');
+		$this->template->setSource('{snippet tabella}{$body}{/snippet}');
 		$this->template->tabella_id = $this->getUniqueId();
+		$this->template->controls = $this->params['addedControls'];
 		$this->template->body =
 				Html::el('div', array(
 					'class' => 'tabella',
 					'data-id' => $this->getUniqueId(),
-					'data-submit-url' => $this->link('submit!', $this->linkOpts),
+					'data-submit-url' => $this->link('submit!'),
 					'data-params' => json_encode(array('cols' => $this->cols))))
 				->add(Html::el('table')->add($this->renderHeader())
 				->add($this->renderBody()))
@@ -164,8 +162,8 @@ class Tabella extends \Nette\Application\UI\Control {
 	 * @return string
 	 */
 	public function renderHeader() {
-		$header = Html::el("tr");
-		$anchor = $this->linkOpts;
+		$header = Html::el('tr');
+		$anchor = array();
 		// rendering column by column
 		$columnParams = array();
 		foreach ($this->cols as $col) {
@@ -182,7 +180,7 @@ class Tabella extends \Nette\Application\UI\Control {
 					if ($col->colName == $this->params['order'])
 						$a->class[] = $this->params['sorting'];
 
-
+					$anchor['offset'] = 1;
 					$anchor['order'] = $col->colName;
 					$anchor['sorting'] =
 						$this->params['order'] == $col->colName
@@ -276,27 +274,28 @@ class Tabella extends \Nette\Application\UI\Control {
 		$body->class[] = 'tabella-body';
 
 		if ($this->params['filter'])
-		foreach ($this->params['filter'] as $col => $val) {
-			if ("$val" == "")
+		foreach ($this->params['filter'] as $column => $value) {
+			if ((string) $value == '')
 				continue;
 
-			if (!isset($this->cols[$col]->params['filterHandler'])) {
+			if (!isset($this->cols[$column]->params['filterHandler'])) {
 				// filtering by column, which is not shown
-				$fh = function($val, $col, $type) {
-					return "[$col] = '$val'";
+				$fh = function($source, $value, $column) {
+					return $source->where('%n = %s', $column, $value);
 				};
 			} else {
-				$fh = $this->cols[$col]->params['filterHandler'];
+				$fh = $this->cols[$column]->params['filterHandler'];
 			}
-			$this->source->where($fh($val, $col, $this->cols[$col]->params['type']));
+			$fh($this->source, $value, $column);
 		}
 
-		$this->count = $this->source->count();
 		$this->source
-				->applyLimit($this->params['limit'], ($this->params['offset']-1)*$this->params['limit'])
-				->orderBy($this->params['order'], $this->params['sorting']);
+				->offset(($this->params['offset']-1)*$this->params['limit'])->limit($this->params['limit'])
+				->orderBy($this->params['order'], $this->params['sorting'])->fetchAll();
 
-		foreach ($this->source->fetchAll() as $row) {
+		$this->count = $this->context->dibi->select('FOUND_ROWS()')->fetchSingle();
+
+		foreach ($this->source as $row) {
 			$rR = $this->params['rowRenderer'];
 			$r = $rR($row);
 			if ($row->id)
@@ -358,6 +357,8 @@ class Tabella extends \Nette\Application\UI\Control {
 								$str = strftime($col->params['datetimeFormat'], $str);
 							break;
 						case self::SELECT:
+							if (is_array(@$col->params['options']) && isset($col->params['options'][$str]))
+								$str = $col->params['options'][$str];
 							break;
 					}
 					$c->add($str)->{'data-shown'} = $str;
@@ -371,6 +372,7 @@ class Tabella extends \Nette\Application\UI\Control {
 			}
 			$body->add($r);
 		}
+
 		return $body;
 	}
 
@@ -381,7 +383,7 @@ class Tabella extends \Nette\Application\UI\Control {
 	 * @return string
 	 */
 	public function renderFooter() {
-		$footer = Html::el('div class="tabella-footer"');
+		$footer = Html::el('div')->class('tabella-footer');
 
 		$pages = ceil($this->count / $this->params['limit']);
 
@@ -389,7 +391,7 @@ class Tabella extends \Nette\Application\UI\Control {
 
 		if ($pages > 1) {
 			if ($this->params['offset'] != 1) {
-				$fst = Html::el('a')->href($this->link('reset!', array('offset' => 1) + $this->linkOpts));
+				$fst = Html::el('a')->href($this->link('reset!', array('offset' => 1)));
 			} else {
 				$fst = Html::el('span');
 			}
@@ -407,7 +409,7 @@ class Tabella extends \Nette\Application\UI\Control {
 			$range = array_values(array_unique($range));
 
 			foreach ($range as $i) {
-				$a = Html::el('a')->add($i)->href($this->link('reset!', array('offset' => $i) + $this->linkOpts));
+				$a = Html::el('a')->add($i)->href($this->link('reset!', array('offset' => $i)));
 				$a->class[] = 'tabella_ajax';
 				if ($i == $this->params['offset'])
 					$a->class[] = 'selected';
@@ -415,7 +417,7 @@ class Tabella extends \Nette\Application\UI\Control {
 				$footer->add($a);
 			}
 			if ($this->params['offset'] != $pages) {
-				$last = Html::el('a')->href($this->link('reset!', array('offset' => $pages) + $this->linkOpts));
+				$last = Html::el('a')->href($this->link('reset!', array('offset' => $pages)));
 			} else {
 				$last = Html::el('span');
 			}
@@ -456,4 +458,9 @@ class Tabella extends \Nette\Application\UI\Control {
 			$fn($payload);
 		}
 	}
+
+
+	protected function createTemplate($class = NULL) {
+		return parent::createTemplate('\Nette\Templating\Template');
+    }
 }

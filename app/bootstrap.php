@@ -1,40 +1,50 @@
 <?php
+error_reporting(E_ALL & ~E_STRICT);
+ini_set("display_errors", 1);
 
-/**
- * TabellaExample bootstrap file.
- *
- * @copyright  Copyright (c) 2011 Vojtěch Knyttl
- * @package    Tabella
- * @source	   http://knyt.tl
- */
- 
-require LIBS_DIR . '/Nette/nette.min.php';
+use Nette\Application\Routers\Route,
+	Nette\Diagnostics\Debugger;
 
-use Nette\Diagnostics\Debugger,
-	Nette\Environment,
-	Nette\Application\Routers\Route,
-	Nette\Application\Routers\SimpleRouter;
+require __DIR__ . '/../libs/Nette/nette.min.php';
 
-Debugger::enable( Debugger::DEVELOPMENT );
+Debugger::$strictMode = TRUE;
+Debugger::$logDirectory = __DIR__ . '/../log';
 
-Environment::loadConfig();
+$configurator = new Nette\Configurator;
 
-$application = Environment::getApplication();
+$configurator->container->params += $params;
+$configurator->container->params['tempDir'] = __DIR__ . '/../tmp';
+$container = $configurator->loadConfig(__DIR__ . '/config.neon');
 
-$router = $application->getRouter();
+$container->params['productionMode'] = false;
 
-$router[] = new Route('', array(
-        'presenter' => 'Base',
-        'action' => 'default',
-        'id' => "basic",
-), Route::ONE_WAY);
+Debugger::enable($container->params['productionMode']);
 
-$router[] = new Route('<id>', array(
+$container->robotLoader->register();
+
+$container->addService('dibi', function(Nette\DI\Container $container) {
+		$dibiConnection = new \DibiConnection($container->params['database']);
+		$dibiConnection->query('SET NAMES UTF8');
+		return $dibiConnection;
+    });
+
+// this can probably be done better
+$container->addService('model', function(Nette\DI\Container $container) {
+		return Nette\ArrayHash::from(array(
+				'users'  => new UsersModel($container)
+			));
+	});
+
+$container->router[] = new Route('', array(
+	    'presenter' => 'Base',
+    	'action' => 'default',
+	    'id' => 'basic',
+	), Route::ONE_WAY);
+
+$container->router[] = new Route('<id basic|complex|editable>', array(
         'presenter' => 'Base',
         'action' => 'default',
         'id' => null,
-));
+	));
 
-dibi::connect( Environment::getConfig( 'database' ) );
-
-$application->run();
+$container->application->run();
